@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+python-dotenv
+pytesseract
+pdfplumber
+python-docx
+python-pptx
+openpyxl
+xlrd
+Pillow
+torch
+transformers
+langchain
+langchain-google-genai
+pandas
+python-multipart
