@@ -1,4 +1,5 @@
 import os
+import io
 import re
 import shutil
 import tempfile
@@ -81,22 +82,23 @@ def extract_pptx_text(file_path):
     except Exception as e: print(f"PPTX extraction error: {e}")
     return clean_text(text)
 
+
 def extract_xlsx_text(file_path):
     text = ""
     try:
-        wb = openpyxl.load_workbook(file_path, data_only=True, read_only=True)
+        with open(file_path, 'rb') as f:
+            in_memory_file = io.BytesIO(f.read())
+        wb = openpyxl.load_workbook(in_memory_file, data_only=True, read_only=True)
         for sheet in wb:
             text += f"--- Sheet: {sheet.title} ---\n"
             for row_values in sheet.iter_rows(values_only=True):
                 row_data = []
                 for cell_value in row_values:
-                    if cell_value is None:
-                        continue
+                    if cell_value is None: continue
                     if isinstance(cell_value, datetime):
                         row_data.append(cell_value.strftime("%Y-%m-%d %H:%M:%S"))
                     else:
                         row_data.append(str(cell_value))
-                
                 row_text = " | ".join(row_data)
                 if row_text.strip():
                     text += row_text + "\n"
@@ -107,7 +109,8 @@ def extract_xlsx_text(file_path):
 def extract_xls_text(file_path):
     text = ""
     try:
-        wb = xlrd.open_workbook(file_path)
+        with open(file_path, 'rb') as f:
+            wb = xlrd.open_workbook(file_contents=f.read())
         for sheet in wb.sheets():
             text += f"--- Sheet: {sheet.name} ---\n"
             for row_idx in range(sheet.nrows):
@@ -115,14 +118,11 @@ def extract_xls_text(file_path):
                 for col_idx in range(sheet.ncols):
                     cell = sheet.cell(row_idx, col_idx)
                     cell_value = cell.value
-                    
                     if cell.ctype == xlrd.XL_CELL_DATE:
                         dt_tuple = xlrd.xldate_as_tuple(cell_value, wb.datemode)
                         cell_value = datetime(*dt_tuple).strftime("%Y-%m-%d %H:%M:%S")
-                    
                     if cell_value and str(cell_value).strip():
                         row_data.append(str(cell_value))
-                        
                 row_text = " | ".join(row_data)
                 if row_text.strip():
                     text += row_text + "\n"
